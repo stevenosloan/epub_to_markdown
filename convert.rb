@@ -1,5 +1,6 @@
-require 'nokogiri'
-require 'reverse_markdown'
+#require 'nokogiri'
+#require 'reverse_markdown'
+require 'html2md'
 
 module Convert
 
@@ -14,7 +15,7 @@ module Convert
 		end
 
 		def books
-			Dir[ File.join( @dir, '**' )] 
+			Dir[ File.join( @dir, '**' )]
 		end
 
 	end
@@ -46,13 +47,21 @@ module Convert
 		end
 
 		def markdown
-			ReverseMarkdown.parse Nokogiri::HTML( File.open( @file ) ).at_css ".content"
+			# strip out xml nastiness
+			file_contents = IO.read(@file).gsub '<?xml version="1.0" encoding="utf-8"?>', ''
+			parsed_md = Html2Md.new(file_contents).parse
+
+			# replace definetion lists with markdown-parsable formatting
+			parsed_md.gsub! '<dt>', '### '
+			parsed_md.gsub! '</dt>', ''
+			parsed_md.gsub! '<dd>', "\n"
+			parsed_md.gsub! '</dd>', ''
 		end
 
 	end
 
 	class Output
-	
+
 		def initialize args
 			@dir = args[:dir].gsub( 'source' , 'output' )
 			@source = args[:source]
@@ -67,7 +76,7 @@ module Convert
 
 		def write_file!
 			require 'fileutils'
-			
+
 			puts ">> writing chapter to: #{self.path}"
 			FileUtils.mkdir_p( File.dirname( self.path ) )
 			File.open( self.path, 'w' ) do |f|

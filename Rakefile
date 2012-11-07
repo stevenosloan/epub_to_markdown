@@ -1,4 +1,4 @@
-require 'rake'
+require 'html2md'
 
 desc "run the dang thing"
 task :run do
