@@ -37,6 +37,16 @@ module Convert
 		end
 	end
 
+	class Errors
+		@count = 0
+		def self.add(count)
+			@count += count
+		end
+		def self.get
+			@count
+		end
+	end
+
 	class Manipulate
 
 		def initialize args
@@ -48,13 +58,20 @@ module Convert
 		def markdown
 			# strip out xml nastiness
 			file_contents = IO.read(@file).gsub '<?xml version="1.0" encoding="utf-8"?>', ''
-			parsed_md = Html2Md.new(file_contents).parse
+			begin
+				parsed_md = Html2Md.new(file_contents).parse
 
-			# replace definetion lists with markdown-parsable formatting
-			parsed_md.gsub! '<dt>', '### '
-			parsed_md.gsub! '</dt>', ''
-			parsed_md.gsub! '<dd>', "\n"
-			parsed_md.gsub! '</dd>', ''
+				# replace definetion lists with markdown-parsable formatting
+				parsed_md.gsub! '<dt>', '### '
+				parsed_md.gsub! '</dt>', ''
+				parsed_md.gsub! '<dd>', "\n"
+				parsed_md.gsub! '</dd>', ''
+			rescue Exception => e
+				puts ">> error converting file: #{@file}".colorize :red
+				puts "   message: #{e.message}".colorize :red
+				puts "   details: #{e.backtrace.join("\n   ")}".colorize :red
+				Convert::Errors.add 1
+			end
 		end
 
 	end
@@ -76,7 +93,7 @@ module Convert
 		def write_file!
 			require 'fileutils'
 
-			puts ">> writing chapter to: #{self.path}"
+			puts ">> writing chapter to: #{self.path}".colorize(:green)
 			FileUtils.mkdir_p( File.dirname( self.path ) )
 			File.open( self.path, 'w' ) do |f|
 				f.puts @content
