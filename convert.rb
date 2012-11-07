@@ -1,6 +1,5 @@
-#require 'nokogiri'
-#require 'reverse_markdown'
 require 'html2md'
+require 'colorize'
 
 module Convert
 
